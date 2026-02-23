@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "571166854988",
+    "project_id": "vpapoutsis-speedboat",
+    "storage_bucket": "vpapoutsis-speedboat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:571166854988:android:886582613414315fc309e9",
+        "android_client_info": {
+          "package_name": "com.example.speedboat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdm7nnxG4RzYYhIuHlIPNjlLOc540iL1s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

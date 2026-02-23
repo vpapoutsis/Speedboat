@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.speedboat.ui.login.LoginScreen
+import com.example.speedboat.ui.navigation.AppNavigation
 import com.example.speedboat.ui.theme.SpeedboatTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +13,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SpeedboatTheme {
-                LoginScreen()
+                // Αντί για LoginScreen(), καλούμε το Navigation logic
+                AppNavigation()
             }
         }
     }
