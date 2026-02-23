@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,6 +91,7 @@ fun ProfileScreenContent(userName: String, onLogout: () -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         // Progress Bar Card
+        /*
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
@@ -107,14 +109,112 @@ fun ProfileScreenContent(userName: String, onLogout: () -> Unit) {
                 )
             }
         }
+        */
+        // Υποθέτουμε ότι το successRate είναι Int (π.χ. 65)
+        val successRate = 65 // Αυτό αργότερα θα έρχεται από τη βάση σου
+        val (feedbackMessage, feedbackColor) = getProgressFeedback(successRate)
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Συνολική Πρόοδος",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "$successRate%",
+                        fontWeight = FontWeight.Bold,
+                        color = feedbackColor
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Η μπάρα προόδου
+                LinearProgressIndicator(
+                    progress = { successRate / 100f }, // Μετατροπή σε 0.0 - 1.0
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp),
+                    color = feedbackColor,
+                    trackColor = Color.LightGray.copy(alpha = 0.3f),
+                    strokeCap = StrokeCap.Round
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Το δυναμικό κείμενο (π.χ. Χρειάζεται λίγο ακόμα διάβασμα)
+                Text(
+                    text = feedbackMessage,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
         // Κουμπί Αποσύνδεσης
-        TextButton(onClick = onLogout) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Αποσύνδεση", color = Color.White, fontSize = 16.sp)
+        //TextButton(onClick = onLogout) {
+        //    Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White)
+        //    Spacer(modifier = Modifier.width(8.dp))
+        //    Text(text = "Αποσύνδεση", color = Color.White, fontSize = 16.sp)
+        //}
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            TextButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp, // Ή Icons.Default.ExitToApp
+                        contentDescription = null,
+                        tint = Color(0xFFD32F2F) // Κόκκινο χρώμα
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Αποσύνδεση",
+                        color = Color(0xFFD32F2F), // Το ίδιο κόκκινο χρώμα
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+fun getProgressFeedback(percentage: Int): Pair<String, Color> {
+    return when {
+        percentage == 0 -> "Δεν έχεις ξεκινήσει ακόμα. Πάμε!" to Color.Gray
+        percentage < 50 -> "Χρειάζεται αρκετό διάβασμα ακόμα..." to Color(0xFFFF5252) // Κόκκινο
+        percentage < 80 -> "Είσαι σε καλό δρόμο, συνέχισε!" to Color(0xFFFFA000) // Πορτοκαλί
+        percentage < 95 -> "Σχεδόν έτοιμος για το δίπλωμα!" to Color(0xFF4CAF50) // Πράσινο
+        else -> "Είσαι ειδικός! Έτοιμος για θάλασσα!" to Color(0xFF00BFFF) // Μπλε
     }
 }
