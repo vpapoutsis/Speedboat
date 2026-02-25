@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,12 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.collections.getOrNull
@@ -59,101 +59,141 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
 
     val currentQuestion = questions.getOrNull(currentIndex)
 
+    // Έλεγχος ασφαλείας: Αν η λίστα είναι άδεια, δείξε μήνυμα ή γύρνα πίσω
+    if (questions.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Φόρτωση ερωτήσεων...")
+        }
+        return
+    }
+
     if (currentQuestion == null) {
         // Τέλος Quiz
         onQuizFinish(correctCount, wrongCount)
         return
     }
 
-    Column(
+    // 1. Το Gradient Background σε όλη την οθόνη
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(24.dp)
-    ) {
-        // Header: Back button, Progress 1/20, Stats
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Close, contentDescription = null, tint = Color.Gray)
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)) {
-                        append("${currentIndex + 1}")
-                    }
-                    append("/${questions.size}")
-                },
-                color = Color.Gray
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF003366), Color(0xFF00BFFF))
+                )
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StatBadge(text = "$correctCount", color = Color(0xFF4CAF50), icon = Icons.Default.Check)
-                Spacer(modifier = Modifier.width(8.dp))
-                StatBadge(text = "$wrongCount", color = Color(0xFFD32F2F), icon = Icons.Default.Close)
+    ) {
+        // 2. Το κεντρικό Column που "κρατάει" τα πάντα στη μέση
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .systemBarsPadding(),
+            verticalArrangement = Arrangement.Center, // Κεντράρισμα καθ' ύψος
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            // 3. Πρόοδος και Stats στην ίδια σειρά
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                LinearProgressIndicator(
+                    progress = { (currentIndex + 1).toFloat() / questions.size },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.2f)
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatBadge(text = "$correctCount", color = Color(0xFF4CAF50), icon = Icons.Default.Check)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    StatBadge(text = "$wrongCount", color = Color(0xFFFF5252), icon = Icons.Default.Close)
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            // Αριθμός ερώτησης
+            Text(
+                text = "Ερώτηση ${currentIndex + 1}/${questions.size}",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                textAlign = TextAlign.Start
+            )
 
-        // Progress Bar
-        LinearProgressIndicator(
-            progress = { (currentIndex + 1).toFloat() / questions.size },
-            modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-            color = Color(0xFF003366),
-            trackColor = Color.LightGray.copy(alpha = 0.3f)
-        )
+            Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+            // 4. Η Ερώτηση (Μέσα σε Κάρτα για να ξεχωρίζει)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Text(
+                    text = currentQuestion.text,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 28.sp,
+                    color = Color(0xFF003366),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(24.dp).fillMaxWidth()
+                )
+            }
 
-        // Question Text
-        Text(
-            text = currentQuestion.text,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 28.sp,
-            color = Color.Black
-        )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+            // 5. Λίστα Επιλογών
+            currentQuestion.options.forEachIndexed { index, option ->
+                val letter = when(index) { 0 -> "A"; 1 -> "B"; 2 -> "C"; else -> "D" }
+                val isThisOptionCorrect = option == currentQuestion.correctAnswer
 
-        // Options List
-        currentQuestion.options.forEachIndexed { index, option ->
-            val letter = when(index) { 0 -> "A"; 1 -> "B"; 2 -> "C"; else -> "D" }
+                OptionCard(
+                    letter = letter,
+                    text = option,
+                    isSelected = selectedAnswer == index,
+                    isAnswered = isAnswered,
+                    isCorrect = isThisOptionCorrect,
+                    onClick = {
+                        if (!isAnswered) {
+                            selectedAnswer = index
+                            isAnswered = true
+                            if (isThisOptionCorrect) correctCount++ else wrongCount++
+                        }
+                    }
+                )
+            }
 
-            OptionCard(
-                letter = letter,
-                text = option,
-                isSelected = selectedAnswer == index,
-                isAnswered = isAnswered,
-                isCorrect = index == currentQuestion.correctAnswerIndex,
-                onClick = {
-                    if (!isAnswered) {
-                        selectedAnswer = index
-                        isAnswered = true
-                        if (index == currentQuestion.correctAnswerIndex) correctCount++ else wrongCount++
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // 6. Κουμπί Επόμενη (Με σταθερό Box για να μην αναπηδά το UI)
+            Box(modifier = Modifier.height(56.dp).fillMaxWidth()) {
+                if (isAnswered) {
+                    Button(
+                        onClick = {
+                            currentIndex++
+                            selectedAnswer = null
+                            isAnswered = false
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000080)),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        //Text("Επόμενη", fontSize = 18.sp, color = Color(0xFF003366), fontWeight = FontWeight.Bold)
+                        Text("Επόμενη", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null
+                            //tint = Color(0xFF003366)
+                        )
                     }
                 }
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // "Επόμενη" Button - Εμφανίζεται μόνο μετά την απάντηση
-        if (isAnswered) {
-            Button(
-                onClick = {
-                    currentIndex++
-                    selectedAnswer = null
-                    isAnswered = false
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A237E)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Επόμενη", fontSize = 18.sp, color = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -165,28 +205,28 @@ fun OptionCard(
     text: String,
     isSelected: Boolean,
     isAnswered: Boolean,
-    isCorrect: Boolean,
+    isCorrect: Boolean, // Αυτό πλέον υπολογίζεται ως (option == question.correctAnswer)
     onClick: () -> Unit
 ) {
-    // Καθορισμός χρωμάτων βάσει της εικόνας 15 & 16
+    // 1. Καθορισμός Χρωμάτων (Σύμφωνα με τις εικόνες 15 & 16)
     val backgroundColor = when {
         !isAnswered -> Color.White
-        isCorrect -> Color(0xFFE8F5E9) // Απαλό πράσινο
-        isSelected && !isCorrect -> Color(0xFFFFEBEE) // Απαλό κόκκινο
+        isCorrect -> Color(0xFFE8F5E9) // Απαλό πράσινο αν είναι η σωστή
+        isSelected -> Color(0xFFFFEBEE) // Απαλό κόκκινο αν επιλέχθηκε λάθος (το isCorrect ελέγχθηκε παραπάνω)
         else -> Color.White
     }
 
     val borderColor = when {
         !isAnswered -> if (isSelected) Color(0xFF003366) else Color(0xFFF0F0F0)
         isCorrect -> Color(0xFF4CAF50)
-        isSelected && !isCorrect -> Color(0xFFD32F2F)
+        isSelected -> Color(0xFFD32F2F)
         else -> Color(0xFFF0F0F0)
     }
 
     val contentColor = when {
         !isAnswered -> Color.Black
         isCorrect -> Color(0xFF2E7D32)
-        isSelected && !isCorrect -> Color(0xFFC62828)
+        isSelected -> Color(0xFFC62828)
         else -> Color.Gray
     }
 
@@ -194,7 +234,7 @@ fun OptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .clickable { onClick() },
+            .clickable(enabled = !isAnswered) { onClick() }, // Απενεργοποίηση κλικ μετά την απάντηση
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, borderColor),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
@@ -204,25 +244,38 @@ fun OptionCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Letter Circle (A, B, C)
+            // Κύκλος με το Γράμμα (A, B, C)
             Surface(
                 modifier = Modifier.size(32.dp),
                 shape = CircleShape,
-                color = if (isAnswered && (isCorrect || (isSelected && !isCorrect))) contentColor else Color(0xFFF5F5F5)
+                // Εδώ αφαιρέθηκε το περιττό !isCorrect
+                color = if (isAnswered && (isCorrect || isSelected)) contentColor else Color(0xFFF5F5F5)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(letter, color = if (isAnswered && (isCorrect || isSelected)) Color.White else Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = letter,
+                        color = if (isAnswered && (isCorrect || isSelected)) Color.White else Color.Gray,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Text(text = text, modifier = Modifier.weight(1f), color = contentColor, fontSize = 16.sp)
+            Text(
+                text = text,
+                modifier = Modifier.weight(1f),
+                color = contentColor,
+                fontSize = 16.sp,
+                fontWeight = if (isAnswered && (isCorrect || isSelected)) FontWeight.Bold else FontWeight.Normal
+            )
 
+            // Εικονίδια Check ή Cancel
             if (isAnswered) {
                 if (isCorrect) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
                 } else if (isSelected) {
+                    // Εδώ η Kotlin ξέρει ότι το isCorrect είναι false
                     Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFD32F2F))
                 }
             }

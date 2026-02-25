@@ -1,9 +1,10 @@
 package com.example.speedboat.ui.navigation
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -15,11 +16,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.speedboat.ui.login.LoginScreen
 import com.example.speedboat.ui.login.RegisterScreen
 import com.example.speedboat.ui.menu.MainMenuScreen
+import com.example.speedboat.ui.quiz.QuizErrorScreen
 import com.example.speedboat.ui.quiz.QuizScreen
 import com.example.speedboat.ui.quiz.QuizViewModel
 import com.example.speedboat.ui.quiz.saveUserStats
 import com.google.firebase.auth.FirebaseAuth
-//import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun AppNavigation() {
@@ -73,6 +74,8 @@ fun AppNavigation() {
             val questions by viewModel.questions
             val isLoading by viewModel.isLoading
 
+            val myContext = LocalContext.current
+
             if (isLoading) {
                 // Εμφάνιση ενός Loading Spinner μέχρι να έρθουν οι ερωτήσεις
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -92,7 +95,14 @@ fun AppNavigation() {
                 )
             } else {
                 // Περίπτωση σφάλματος ή άδειας βάσης
-                Text("Δεν βρέθηκαν ερωτήσεις. Ελέγξτε τη σύνδεση.")
+                QuizErrorScreen(
+                    message = "Δεν μπορέσαμε να φορτώσουμε τις ερωτήσεις. Βεβαιώσου ότι έχεις ίντερνετ ή ότι υπάρχουν ερωτήσεις στη βάση.",
+                    onRetry = {
+                        Toast.makeText(myContext, "Προσπάθεια επανασύνδεσης...", Toast.LENGTH_SHORT).show()
+                        viewModel.loadQuestions()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
