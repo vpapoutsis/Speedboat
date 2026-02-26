@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Cancel
@@ -36,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import kotlin.collections.getOrNull
 
 @Composable
@@ -56,6 +60,10 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
     var isAnswered by remember { mutableStateOf(false) }
     var correctCount by remember { mutableIntStateOf(0) }
     var wrongCount by remember { mutableIntStateOf(0) }
+
+    // 1. Δημιουργία ScrollState και CoroutineScope
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope() // Απαραίτητο για το scroll animation
 
     val currentQuestion = questions.getOrNull(currentIndex)
 
@@ -73,7 +81,6 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
         return
     }
 
-    // 1. Το Gradient Background σε όλη την οθόνη
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -83,17 +90,17 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
                 )
             )
     ) {
-        // 2. Το κεντρικό Column που "κρατάει" τα πάντα στη μέση
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                .systemBarsPadding(),
-            verticalArrangement = Arrangement.Center, // Κεντράρισμα καθ' ύψος
+                .systemBarsPadding()
+                .verticalScroll(scrollState) // Ενεργοποίηση Scroll
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // 3. Πρόοδος και Stats στην ίδια σειρά
+            // --- ProgressBar & Stats (Ίδιο όπως πριν) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -116,18 +123,9 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
                 }
             }
 
-            // Αριθμός ερώτησης
-            Text(
-                text = "Ερώτηση ${currentIndex + 1}/${questions.size}",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                textAlign = TextAlign.Start
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 4. Η Ερώτηση (Μέσα σε Κάρτα για να ξεχωρίζει)
+            // --- Question Card ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -147,13 +145,12 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 5. Λίστα Επιλογών
+            // --- Options List ---
             currentQuestion.options.forEachIndexed { index, option ->
-                val letter = when(index) { 0 -> "A"; 1 -> "B"; 2 -> "C"; else -> "D" }
                 val isThisOptionCorrect = option == currentQuestion.correctAnswer
 
                 OptionCard(
-                    letter = letter,
+                    letter = when(index) { 0 -> "A"; 1 -> "B"; 2 -> "C"; else -> "D" },
                     text = option,
                     isSelected = selectedAnswer == index,
                     isAnswered = isAnswered,
@@ -170,28 +167,28 @@ fun QuizScreen(questions: List<Question>, onQuizFinish: (Int, Int) -> Unit) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // 6. Κουμπί Επόμενη (Με σταθερό Box για να μην αναπηδά το UI)
+            // --- "Επόμενη" Button με Auto-Scroll Reset ---
             Box(modifier = Modifier.height(56.dp).fillMaxWidth()) {
                 if (isAnswered) {
                     Button(
                         onClick = {
+                            // 2. Επαναφορά του Scroll στην κορυφή με animation
+                            scope.launch {
+                                scrollState.animateScrollTo(0)
+                            }
+
+                            // Αλλαγή ερώτησης
                             currentIndex++
                             selectedAnswer = null
                             isAnswered = false
                         },
                         modifier = Modifier.fillMaxSize(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000080)),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        //Text("Επόμενη", fontSize = 18.sp, color = Color(0xFF003366), fontWeight = FontWeight.Bold)
-                        Text("Επόμενη", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Επόμενη", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null
-                            //tint = Color(0xFF003366)
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
                     }
                 }
             }
