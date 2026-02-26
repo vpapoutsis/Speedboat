@@ -10,9 +10,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.speedboat.ui.login.LoginScreen
 import com.example.speedboat.ui.login.RegisterScreen
 import com.example.speedboat.ui.menu.MainMenuScreen
@@ -20,6 +22,7 @@ import com.example.speedboat.ui.quiz.QuizErrorScreen
 import com.example.speedboat.ui.quiz.QuizScreen
 import com.example.speedboat.ui.quiz.QuizViewModel
 import com.example.speedboat.ui.quiz.saveUserStats
+import com.example.speedboat.ui.summary.SummaryScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -54,7 +57,7 @@ fun AppNavigation() {
             )
         }
 
-        // Οθόνη Κύριου Μενού (Placeholder μέχρι να τη φτιάξεις)
+        // Οθόνη Κύριου Μενού
         composable("main_menu") {
             MainMenuScreen(
                 onStartQuiz = { navController.navigate("quiz") },
@@ -84,13 +87,29 @@ fun AppNavigation() {
             } else if (questions.isNotEmpty()) {
                 QuizScreen(
                     questions = questions,
+                    //onQuizFinish = { correct, wrong ->
+                    //    // Αποθήκευση στατιστικών και επιστροφή
+                    //    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                    //    if (userId != null) {
+                    //        saveUserStats(userId, wrong <= 2) // Επιτυχία αν λάθη <= 2
+                    //    }
+                    //    navController.popBackStack()
+                    //}
                     onQuizFinish = { correct, wrong ->
-                        // Αποθήκευση στατιστικών και επιστροφή
+                        // 1. Αποθήκευση στατιστικών στη βάση
                         val userId = FirebaseAuth.getInstance().currentUser?.uid
                         if (userId != null) {
                             saveUserStats(userId, wrong <= 2) // Επιτυχία αν λάθη <= 2
                         }
-                        navController.popBackStack()
+
+                        // 2. Μετάβαση στην οθόνη Summary με πέρασμα των δεδομένων
+                        // Χρησιμοποιούμε το route που ορίσαμε: "summary/{correct}/{wrong}"
+                        navController.navigate("summary/$correct/$wrong") {
+                            // Αυτό το κομμάτι είναι ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ:
+                            // Καθαρίζει το Quiz από το ιστορικό (backstack) ώστε αν ο χρήστης
+                            // πατήσει το πίσω κουμπί από το Summary, να μην ξαναμπεί στο ίδιο Quiz.
+                            popUpTo("quiz") { inclusive = true }
+                        }
                     }
                 )
             } else {
@@ -105,6 +124,33 @@ fun AppNavigation() {
                 )
             }
         }
+
+        composable(
+            route = "summary/{correct}/{wrong}",
+            arguments = listOf(
+                navArgument("correct") { type = NavType.IntType },
+                navArgument("wrong") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val correct = backStackEntry.arguments?.getInt("correct") ?: 0
+            val wrong = backStackEntry.arguments?.getInt("wrong") ?: 0
+
+            SummaryScreen(
+                correctAnswers = correct,
+                wrongAnswers = wrong,
+                onNewTest = {
+                    navController.navigate("quiz") {
+                        popUpTo("main_menu") // Καθαρίζει το stack για να μη γυρνάει πίσω στο παλιό summary
+                    }
+                },
+                onHome = {
+                    navController.navigate("main_menu") {
+                        popUpTo("main_menu") { inclusive = true }
+                    }
+                }
+            )
+        }
+
     }
 }
 
